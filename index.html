@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow Pro | Image Processor</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-primary: #818cf8;
+            --accent-secondary: #2dd4bf;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+
+        body {
+            background: radial-gradient(circle at top left, #1e1b4b, #0f172a);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .lang-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 3rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone.dragover { border-color: var(--accent-primary); background: rgba(129, 140, 248, 0.1); }
+
+        .preview-container { display: none; margin-top: 1.5rem; text-align: center; }
+        .preview-container img { max-width: 100%; max-height: 350px; border-radius: 12px; margin-bottom: 1.5rem; }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.2rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        [dir="rtl"] .controls-grid { text-align: right; }
+
+        .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        label { font-size: 0.85rem; color: var(--text-dim); }
+
+        input[type="number"], select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.75rem;
+            color: white;
+            outline: none;
+        }
+
+        input:focus, select:focus { border-color: var(--accent-primary); }
+
+        .checkbox-group { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.8rem; cursor: pointer; }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            text-decoration: none;
+        }
+
+        .btn-primary { background: linear-gradient(135deg, var(--accent-primary), #6366f1); color: white; margin-top: 1.5rem; }
+        .btn-contact { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--accent-secondary); margin-top: 1rem; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        .info-tip {
+            font-size: 0.75rem;
+            color: var(--accent-secondary);
+            margin-top: 0.4rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">VisionFlow Pro</div>
+        <button class="lang-toggle" onclick="toggleLanguage()" id="langBtn">العربية</button>
+    </header>
+
+    <main class="card">
+        <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <svg style="width:40px; color:var(--accent-primary); margin-bottom:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.587-1.587a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p id="uploadText">Click or Drag & Drop Image</p>
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <img id="imagePreview" alt="Preview">
+            
+            <div class="controls-grid">
+                <div class="input-group">
+                    <label id="lblWidth">Width (px)</label>
+                    <input type="number" id="widthInput">
+                </div>
+                <div class="input-group">
+                    <label id="lblHeight">Height (px)</label>
+                    <input type="number" id="heightInput">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="aspectRatio" checked>
+                    <label for="aspectRatio" id="lblLock">Lock Ratio</label>
+                </div>
+                <div class="input-group">
+                    <label id="lblFormat">Format</label>
+                    <select id="formatInput">
+                        <option value="image/png">PNG</option>
+                        <option value="image/jpeg">JPG / JPEG</option>
+                        <option value="image/webp">WEBP</option>
+                        <option value="image/x-icon">ICO (Icon)</option>
+                        <option value="image/bmp">BMP (Bitmap)</option>
+                    </select>
+                    <span id="formatTip" class="info-tip">Standard Icon Size Applied (256x256)</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="downloadBtn">
+                <span id="btnText">Download Image</span>
+            </button>
+        </div>
+
+        <a href="https://t.me/I_Off_I" target="_blank" class="btn btn-contact" id="contactBtn">
+            <span id="contactText">Click to Contact</span>
+        </a>
+    </main>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const translations = {
+            en: {
+                langBtn: "العربية", uploadText: "Click or Drag & Drop Image",
+                lblWidth: "Width (px)", lblHeight: "Height (px)",
+                lblLock: "Lock Aspect Ratio", lblFormat: "Export Format",
+                btnText: "Download Processed Image", contactText: "Click to Contact",
+                formatTip: "Standard Icon Size Applied (256x256)", dir: "ltr"
+            },
+            ar: {
+                langBtn: "English", uploadText: "اضغط هنا أو اسحب الصورة",
+                lblWidth: "العرض (بكسل)", lblHeight: "الطول (بكسل)",
+                lblLock: "قفل النسبة", lblFormat: "صيغة التصدير",
+                btnText: "تحميل الصورة", contactText: "اضغط للتواصل",
+                formatTip: "تم تطبيق مقاس الأيقونة القياسي (256×256)", dir: "rtl"
+            }
+        };
+
+        let currentLang = 'en';
+        let originalImage = new Image();
+        let aspect = 1;
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            const t = translations[currentLang];
+            document.documentElement.dir = t.dir;
+            document.getElementById('langBtn').innerText = t.langBtn;
+            document.getElementById('uploadText').innerText = t.uploadText;
+            document.getElementById('lblWidth').innerText = t.lblWidth;
+            document.getElementById('lblHeight').innerText = t.lblHeight;
+            document.getElementById('lblLock').innerText = t.lblLock;
+            document.getElementById('lblFormat').innerText = t.lblFormat;
+            document.getElementById('btnText').innerText = t.btnText;
+            document.getElementById('contactText').innerText = t.contactText;
+            document.getElementById('formatTip').innerText = t.formatTip;
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const formatInput = document.getElementById('formatInput');
+        const aspectRatioBox = document.getElementById('aspectRatio');
+        const formatTip = document.getElementById('formatTip');
+
+        fileInput.addEventListener('change', e => {
+            const reader = new FileReader();
+            reader.onload = event => {
+                originalImage.onload = () => {
+                    aspect = originalImage.width / originalImage.height;
+                    widthInput.value = originalImage.width;
+                    heightInput.value = originalImage.height;
+                    document.getElementById('imagePreview').src = event.target.result;
+                    document.getElementById('previewContainer').style.display = 'block';
+                    checkFormatConstraints();
+                };
+                originalImage.src = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        // مراقبة تغيير الصيغة وتعديل المقاسات
+        formatInput.addEventListener('change', checkFormatConstraints);
+
+        function checkFormatConstraints() {
+            if (formatInput.value === 'image/x-icon') {
+                // ضبط مقاسات الأيقونة القياسية
+                widthInput.value = 256;
+                heightInput.value = 256;
+                aspectRatioBox.checked = true;
+                formatTip.style.display = 'block';
+            } else {
+                formatTip.style.display = 'none';
+            }
+        }
+
+        widthInput.addEventListener('input', () => {
+            if(aspectRatioBox.checked) heightInput.value = Math.round(widthInput.value / aspect);
+        });
+
+        heightInput.addEventListener('input', () => {
+            if(aspectRatioBox.checked) widthInput.value = Math.round(heightInput.value * aspect);
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = widthInput.value;
+            canvas.height = heightInput.value;
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            
+            const format = formatInput.value;
+            const extension = format === 'image/x-icon' ? 'ico' : format.split('/')[1];
+            
+            const link = document.createElement('a');
+            link.download = `visionflow_${Date.now()}.${extension}`;
+            link.href = canvas.toDataURL(format === 'image/x-icon' ? 'image/png' : format, 1.0);
+            link.click();
+        });
+
+        // Drag & Drop
+        const dz = document.getElementById('dropZone');
+        dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', e => {
+            e.preventDefault();
+            dz.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        });
+    </script>
+</body>
+</html>
